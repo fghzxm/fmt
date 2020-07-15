@@ -9,15 +9,19 @@
 
 enum struct color { red, green, blue };
 
-template <> struct fmt::formatter<color> {
-  constexpr auto parse(format_parse_context& ctx) {
+namespace fmt {
+template <> struct formatter<color> {
+  FMT_CONSTEXPR auto parse(format_parse_context& ctx) const
+      -> decltype(ctx.begin()) {
     auto it = ctx.begin();
-    if (it == ctx.end()) throw fmt::format_error("incomplete format string");
-    if (*it != '}') throw fmt::format_error("unknown format specs");
+    if (it == ctx.end()) throw format_error("incomplete format string");
+    if (*it != '}') throw format_error("unknown format specs");
     return it;
   }
-  template <typename FormatContext> auto format(color c, FormatContext& ctx) {
-    static const char red_s[] = "red", green_s[] = "green", blue_s[] = "blue";
+  template <typename FormatContext>
+  auto format(color c, FormatContext& ctx) const -> decltype(ctx.out()) {
+    static const char red_s[] = "red", green_s[] = "green", blue_s[] = "blue",
+                      unknown_s[] = "unknown";
     const char *begin_p, *end_p;
     switch (c) {
     case color::red:
@@ -32,10 +36,15 @@ template <> struct fmt::formatter<color> {
       begin_p = std::begin(blue_s);
       end_p = std::end(blue_s);
       break;
+    default:
+      begin_p = std::begin(unknown_s);
+      end_p = std::end(unknown_s);
+      break;
     }
     return std::copy(begin_p, end_p - 1, ctx.out());
   }
 };
+}  // namespace fmt
 
 TEST(UserDefinedTypeTest, Format) {
   EXPECT_EQ("red green blue",
